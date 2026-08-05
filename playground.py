@@ -8,7 +8,8 @@ sys.path.insert(-1, './src/')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from ABC_crit import ABC_crit
-from fred_transform import fred_qd_transform
+from fred_transform import fred_transform
+from utils import impute_missing
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
 
@@ -28,7 +29,7 @@ seed = 1776
 df = pd.read_csv('./data/2026-04-QD.csv')
 ## Often for some variables the observation corresponding to the last observation date is not yet recorded
 df = df.iloc[:-1,:]
-fred_df = fred_qd_transform(df)
+fred_df = fred_transform(df, freq='QD')
 fred_df.index.freq = fred_df.index.inferred_freq
 
 ## The first two observations will be lost due to the stationary I(2) transforms
@@ -45,7 +46,9 @@ series_init = dict()
 for key, _ in ls_missing.items():
     fr_index = fred_df[key].first_valid_index()
     series_init[key] = fr_index
-    
+
+fred_df.loc[fred_df.isna().any(axis=1), fred_df.isna().any(axis=0)]
+
 ## Starting dates vary from one variable to another
 ## To eliminate the NaNs from the data set, we can move the starting date to a future point in time
 ## and then remove the remaining columns for which the data set still contains missing values.
@@ -54,17 +57,89 @@ for key, _ in ls_missing.items():
 fred_df = fred_df.loc['1971-06-01':,:]
 fred_df = fred_df.dropna(axis=1)
 
+## Need to handle COVID period. Typically 2020Q2 and 2020Q3 are set to NaN and later imputed with the Kalman smoother.
+fred_df.loc['2020-06-01':'2020-09-01',:] = None
+
 ## Some series are still non-stationary even after transformations
-## Need to identify and remove them from the data set.
+## Need to identify and analyze## Load data and apply fred transforms
+df = pd.read_csv('./data/2026-04-QD.csv')
+## Often for some variables the observation corresponding to the last observation date is not yet recorded
+df = df.iloc[:-1,:]
+fred_df = fred_transform(df, freq='QD')
+fred_df.index.freq = fred_df.index.inferred_freq
+
+## The first two observations will be lost due to the stationary I(2) transforms
+fred_df = fred_df.iloc[2:,:]
+
+## Choose how to handle missing data
+ls_missing = fred_df.isna().any()
+ls_missing = ls_missing.loc[ls_missing == True]
+ls_missing.shape
+
+series_init = dict()
+
+## To get a sense of the starting date for each series
+for key, _ in ls_missing.items():
+    fr_index = fred_df[key].first_valid_index()
+    series_init[key] = fr_index
+
+fred_df.loc[fred_df.isna().any(axis=1), fred_df.isna().any(axis=0)]
+
+## Starting dates vary from one variable to another
+## To eliminate the NaNs from the data set, we can move the starting date to a future point in time
+## and then remove the remaining columns for which the data set still contains missing values.
+## Setting the starting point to 1971Q3 and then removing the remaining columns with NaNs seems to be a good compromise.
+
+fred_df = fred_df.loc['1971-06-01':,:]
+fred_df = fred_df.dropna(axis=1)
+
+## Need to handle COVID period. Typically 2020Q2 and 2020Q3 are set to NaN and imputed with the Kalman smoother.
+fred_df.loc['2020-06-01':'2020-09-01',:] = None
+fred_df = fred_df.apply(impute_missing, axis=0)
+
+## Some series are still non-stationary even after transformations
+## Need to identify and analyze them.
 
 nonstat_names = []
 for c in fred_df.columns:
-    adf_pval = adfuller(fred_df[c].dropna(), autolag='AIC', regression='c')[1]
+    adf_pval = adfuller(fred_df[c], autolag='AIC', maxlag=8,regression='c')[1]
+    if adf_pval > 0.05:
+        nonstat_names.append(c)
+
+nonstat_names = []
+for c in fred_df.columns:
+    adf_pval = adfuller(fred_df[c].loc[:'2019'], autolag='AIC', maxlag=8,regression='c')[1]
     if adf_pval > 0.05:
         nonstat_names.append(c)
         
+'''
+['USEHS',
+ 'USSERV',
+ 'CES9092000001',
+ 'CIVPART',
+ 'GS1TB3Mx',
+ 'NWPIx',
+ 'GFDEBTNx',
+ 'TLBSNNBBDIx']
 
+These are the series that do not pass the Dickey Fuller test with constant regression.
+Each series has to be individually analyzed via other tests such as kpss, acf, Taylor-Cavaliere, ecc.
+'''
+
+## 1. Non stationarity of USEHS is obviously due to structural break in the late 90s.
+## 2. USSERV seems to have a unit root.
+## 3. CES9092000001 seems to have a unit root.
+## 4. CIVPART is not a unit root process but it isn't stationary either as it does not pass the kpss test under any circumstances.
+## 5. GS1TB3Mx is evidently not stationary, it is enough too look at its plot over time.
+## 6. NWPIx is trend stationary.
+## 7. GFDEBTNx is super non stationary. It is obvious that its variance doesn't exist.
+## 8. TLBSNNBBDIx is also non stationary.
+
+## Thus, we will keep USEHS and de-trend NWPIx. The rest of the series will be dropped.
+nonstat_names.remove('USEHS')
+nonstat_names.remove('NWPIx')
 fred_df = fred_df.drop(columns=nonstat_names)
+
 
 
 """
@@ -83,7 +158,7 @@ kf = int((min(n,T)/100)**0.25)
 kmax = 8 * kf if kf > 0 else 8
 
 fig, ax = plt.subplots()
-rhat1, rhat2, plot = ABC_crit(fred_df, kmax, seed=seed, ax=ax, demean=True)
+rhat1, rhat2, plot = ABC_crit(fred_df, kmax, seed=seed, ax=ax, standardize=True)
 plt.show()
 
 ## rhat1 and rhat2 are the estimated number of common factors at 5 and 1 percent thresholds.
