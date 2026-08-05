@@ -8,10 +8,10 @@ sys.path.insert(-1, './src/')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from ABC_crit import ABC_crit
-from fred_transform import fred_transform
-from utils import impute_missing
+from src.utils.fred_transform import fred_transform
+from src.utils.impute import impute_missing
 import statsmodels.api as sm
-from statsmodels.tsa.stattools import adfuller
+from statsmodels.tsa.stattools import adfuller, kpss
 
 plt.rc('figure', figsize=(18,10))
 sns.set_style('darkgrid')
@@ -57,57 +57,11 @@ fred_df.loc[fred_df.isna().any(axis=1), fred_df.isna().any(axis=0)]
 fred_df = fred_df.loc['1971-06-01':,:]
 fred_df = fred_df.dropna(axis=1)
 
-## Need to handle COVID period. Typically 2020Q2 and 2020Q3 are set to NaN and later imputed with the Kalman smoother.
-fred_df.loc['2020-06-01':'2020-09-01',:] = None
-
 ## Some series are still non-stationary even after transformations
-## Need to identify and analyze## Load data and apply fred transforms
-df = pd.read_csv('./data/2026-04-QD.csv')
-## Often for some variables the observation corresponding to the last observation date is not yet recorded
-df = df.iloc[:-1,:]
-fred_df = fred_transform(df, freq='QD')
-fred_df.index.freq = fred_df.index.inferred_freq
-
-## The first two observations will be lost due to the stationary I(2) transforms
-fred_df = fred_df.iloc[2:,:]
-
-## Choose how to handle missing data
-ls_missing = fred_df.isna().any()
-ls_missing = ls_missing.loc[ls_missing == True]
-ls_missing.shape
-
-series_init = dict()
-
-## To get a sense of the starting date for each series
-for key, _ in ls_missing.items():
-    fr_index = fred_df[key].first_valid_index()
-    series_init[key] = fr_index
-
-fred_df.loc[fred_df.isna().any(axis=1), fred_df.isna().any(axis=0)]
-
-## Starting dates vary from one variable to another
-## To eliminate the NaNs from the data set, we can move the starting date to a future point in time
-## and then remove the remaining columns for which the data set still contains missing values.
-## Setting the starting point to 1971Q3 and then removing the remaining columns with NaNs seems to be a good compromise.
-
-fred_df = fred_df.loc['1971-06-01':,:]
-fred_df = fred_df.dropna(axis=1)
-
-## Need to handle COVID period. Typically 2020Q2 and 2020Q3 are set to NaN and imputed with the Kalman smoother.
-fred_df.loc['2020-06-01':'2020-09-01',:] = None
-fred_df = fred_df.apply(impute_missing, axis=0)
-
-## Some series are still non-stationary even after transformations
-## Need to identify and analyze them.
-
+## Need to identify and analyze
 nonstat_names = []
 for c in fred_df.columns:
-    adf_pval = adfuller(fred_df[c], autolag='AIC', maxlag=8,regression='c')[1]
-    if adf_pval > 0.05:
-        nonstat_names.append(c)
-
-nonstat_names = []
-for c in fred_df.columns:
+    ## Tests are run on series up to 2019 to exclude COVID19 shocks
     adf_pval = adfuller(fred_df[c].loc[:'2019'], autolag='AIC', maxlag=8,regression='c')[1]
     if adf_pval > 0.05:
         nonstat_names.append(c)
@@ -139,6 +93,39 @@ Each series has to be individually analyzed via other tests such as kpss, acf, T
 nonstat_names.remove('USEHS')
 nonstat_names.remove('NWPIx')
 fred_df = fred_df.drop(columns=nonstat_names)
+
+## Detrending NWPIx
+sm.tsa.tsatools.detrend(fred_df['NWPIx'], order=1).plot()
+sm.tsa.tsatools.detrend(fred_df['NWPIx'], order=2).plot()
+
+## quadratic detrending yields smoother results
+fred_df['NWPIx'] = sm.tsa.tsatools.detrend(fred_df['NWPIx'], order=2)
+
+## Conviene stimare anche lo spettro di queste serie per valutare l'importanza dei diversi cicli
+fxx1, pxx_spec_NWPIx = scipy.signal.periodogram(fred_df['NWPIx'], fs=4, window='bartlett', scaling='spectrum')
+fxx2, pxx_spec_USEHS = scipy.signal.periodogram(fred_df['USEHS'], fs=4, window='bartlett', scaling='spectrum')
+fig, ax = plt.subplots(nrows=2)
+ax[0].plot(fxx1, pxx_spec_NWPIx, label='NWPIx')
+ax[0].set_xlabel('Frequency Cycles - 1.00 = 4 Quarters')
+ax[0].set_ylabel('Spectral Power - In units of $x^2$')
+ax[0].set_title('Sample Periodogram with Bartlett Kernel')
+ax[0].legend()
+
+ax[1].plot(fxx2, pxx_spec_USEHS, label='USEHS')
+ax[1].set_xlabel('Frequency Cycles - 1.00 = 4 Quarters')
+ax[1].set_ylabel('Spectral Power - In units of $x^2$')
+ax[1].legend()
+plt.show()
+
+## seems like the low frequency components are very dominant even after detrending, thus
+## it's best to remove these series as well
+
+fred_df = fred_df.drop(columns=['NWPIx','USEHS'])
+
+## Need to handle COVID period. Typically 2020Q2 and 2020Q3 are set to NaN and later imputed with the Kalman smoother.
+fred_df.loc['2020-06-01':'2020-09-01',:] = None
+
+
 
 
 
