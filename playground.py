@@ -7,8 +7,8 @@ sys.path.insert(-1, './src/')
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-from ABC_crit import ABC_crit
-from src.utils.fred_transform import fred_transform
+from src.modules.ABC_crit import ABC_crit
+from src.modules.fred_transform import fred_transform
 from src.utils.impute import impute_missing
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller, kpss
@@ -124,10 +124,6 @@ fred_df = fred_df.drop(columns=['NWPIx','USEHS'])
 
 ## Need to handle COVID period. Typically 2020Q2 and 2020Q3 are set to NaN and later imputed with the Kalman smoother.
 fred_df.loc['2020-06-01':'2020-09-01',:] = None
-
-
-
-
 
 """
 2. Factor Analysis via Static Methods
