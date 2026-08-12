@@ -5,7 +5,7 @@ import warnings
 __transform_codes__ = [1,2,3,4,5,6,7]
 __frequencies__ = ['QD', 'MD']
 
-def _fred_series_transform (data: pd.Series, transform_code: int):
+def _Fred_series_transform (data: pd.Series, transform_code: int):
     """
     This function transforms the input data to achieve stationarity.
     Transformations are based on integer codes which determin the
@@ -67,7 +67,7 @@ def _fred_series_transform (data: pd.Series, transform_code: int):
             
     return data_tr
             
-def fred_transform(data: pd.DataFrame, freq: str):
+def Fred_transform(data: pd.DataFrame, freq: str):
     """
     This function transforms the input data to achieve stationarity.
     Transformations are based on integer codes which determine the
@@ -132,8 +132,8 @@ def fred_transform(data: pd.DataFrame, freq: str):
     
     return transformed_df       
 
-def fred_qd_transform(data: pd.DataFrame):
-    warnings.warn('This function is deprecated and will probably be removed in a future release. Use fred_transform instead.',
+def Fred_qd_transform(data: pd.DataFrame):
+    warnings.warn('This function is deprecated and will probably be removed in a future release. Use Fred_transform instead.',
                   DeprecationWarning,
                   stacklevel=2)
     """
