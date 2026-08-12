@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-plt.rc('figure', figsize=(16,10))
+plt.rc('figure', figsize=(16,6))
 plt.rc('lines', linewidth=1.5)
 sns.set_style('darkgrid')
 
