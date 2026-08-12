@@ -8,7 +8,7 @@ sys.path.insert(-1, './src/')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from src.modules.ABC_crit import ABC_crit
-from src.modules.fred_transform import fred_transform
+from src.modules.Fred_transform import Fred_transform
 from src.utils.impute import impute_missing
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller, kpss
@@ -29,7 +29,7 @@ seed = 1776
 df = pd.read_csv('./data/2026-04-QD.csv')
 ## Often for some variables the observation corresponding to the last observation date is not yet recorded
 df = df.iloc[:-1,:]
-fred_df = fred_transform(df, freq='QD')
+fred_df = Fred_transform(df, freq='QD')
 fred_df.index.freq = fred_df.index.inferred_freq
 
 ## The first two observations will be lost due to the stationary I(2) transforms
