@@ -23,7 +23,7 @@ class DFMPeriodogram:
     scaling: str        # Nature of the estimated periodogram, density for the power spectral density in units of V^2/Hz and spectrum for the power spectrum in units of V^2.    
     window: str         # The kernel window used in estimating the periodogram. Defaults to 'Bartlett'
 
-def dfm_periodogram(data: pd.Series, freq: str, ax: plt.Axes | None = None, **kwargs) -> DFMPeriodogram:
+def DFM_periodogram(data: pd.Series, freq: str, ax: plt.Axes | None = None, **kwargs) -> DFMPeriodogram:
     
     ## Input validation
     if type(data) != pd.Series:
