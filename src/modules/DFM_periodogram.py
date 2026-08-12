@@ -28,7 +28,10 @@ def DFM_periodogram(data: pd.Series, freq: str, ax: plt.Axes | None = None, **kw
     ## Input validation
     if type(data) != pd.Series:
         raise ValueError(f'Invalid input type {type(data)}. Input data should be a pandas Series.')
-        
+     
+    if data.isna().any():
+        raise ValueError('Input series includes NaN values.')
+     
     if freq == None:
         raise ValueError('Please specify the frequency of the input data. Either "QD" for quartely data or "MD" for monthly data.')
         
