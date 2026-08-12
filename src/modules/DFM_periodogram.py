@@ -23,7 +23,7 @@ class DFMPeriodogram:
     scaling: str        # Nature of the estimated periodogram, density for the power spectral density in units of V^2/Hz and spectrum for the power spectrum in units of V^2.    
     window: str         # The kernel window used in estimating the periodogram. Defaults to 'Bartlett'
 
-def DFM_periodogram(data: pd.Series, freq: str, ax: plt.Axes | None = None, **kwargs) -> DFMPeriodogram:
+def DFM_periodogram(data: pd.Series, freq: str | None = None, ax: plt.Axes | None = None, **kwargs) -> DFMPeriodogram:
     
     ## Input validation
     if type(data) != pd.Series:
@@ -32,22 +32,28 @@ def DFM_periodogram(data: pd.Series, freq: str, ax: plt.Axes | None = None, **kw
     if data.isna().any():
         raise ValueError('Input series includes NaN values.')
      
-    if freq == None:
-        raise ValueError('Please specify the frequency of the input data. Either "QD" for quartely data or "MD" for monthly data.')
+#    if freq == None:
+#        raise ValueError('Please specify the frequency of the input data. Either "QD" for quartely data or "MD" for monthly data.')
         
-    unsupported_freq = {freq} - __PGRAM_FREQS__
+#    unsupported_freq = {freq} - __PGRAM_FREQS__
     
-    if unsupported_freq:
-        raise ValueError(f'Unsupported frequency {freq}. Choose either "QD" for quarterlyl data or "MD" for monthly data.')
+#    if unsupported_freq:
+#        raise ValueError(f'Unsupported frequency {freq}. Choose either "QD" for quarterlyl data or "MD" for monthly data.')
 
     params = {k: kwargs.get(k, v) for k,v in  __PGRAM_DEFAULT_PARAMS__.items()}    
     fs, scaling, window, nfft = params.values()
     
     if fs == None:
-        fs = 4.0 if freq == 'QD' else 12.0
-        plot_xlabel = 'Frequency Cycles - 1.00 = 4 Quarters' if freq == 'QD' else 'Frequency Cycles - 1.00 = 12 Months'
-    
-    if fs != None:
+        if freq == 'QD':
+            fs = 4.0
+            plot_xlabel = 'Frequency Cycles - 1.00 = 4 Quarters'
+        elif freq == 'MD':
+            fs = 12.0
+            plot_xlabel = 'Frequency Cycles - 1.00 = 12 Months'
+        else:
+            fs = 1.0
+            plot_xlabel = f'Frequency Cycles - 1.00 = {fs} Periods'    
+    else:
         plot_xlabel = f'Frequency Cycles - 1.00 = {fs} Periods'
     
     if scaling == None:
