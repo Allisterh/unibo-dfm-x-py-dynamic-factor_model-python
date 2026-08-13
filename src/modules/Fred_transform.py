@@ -5,7 +5,7 @@ import warnings
 __transform_codes__ = [1,2,3,4,5,6,7]
 __frequencies__ = ['QD', 'MD']
 
-def _Fred_series_transform (data: pd.Series, transform_code: int):
+def _fred_series_transform (data: pd.Series, transform_code: int):
     """
     This function transforms the input data to achieve stationarity.
     Transformations are based on integer codes which determin the
