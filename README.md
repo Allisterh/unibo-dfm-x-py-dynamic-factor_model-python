@@ -62,6 +62,7 @@ This function provides the means for a simple spectral analysis of univariate se
 - The frequency of the input data is a required argument. This argument takes an optional two character string input ('QD' or 'MD') to determine the frequency of the input data.
 - By default the scaling of the output of the function is such that it corresponds to the power spectrum in units of V^2. Can be set to 'density' if the other scaling is desired.
 - The default kernel window is the Bartlett kernel. Can be set to any of the valid kernels recognized by scipy.
+- The function returns a data class that contains the array of sample frequencies, the estimated periodogram, and the plot of the periodogram against the sample frequencies.
 
 ```python
 import matplotlib.pyplot as plt
@@ -71,7 +72,7 @@ from src.modules.DFM_periodogram import DFM_periodogram
 univariate_series = data.iloc[:,0] # the first series for instance
 
 fig, ax = plt.subplots()
-DFM_periodogram(univariate_series, freq='QD', ax=ax)
+dfm_p = DFM_periodogram(univariate_series, freq='QD', ax=ax)
 plt.show()
 ```
 
