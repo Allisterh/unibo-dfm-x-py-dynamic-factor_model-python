@@ -13,7 +13,7 @@ from src.utils.impute import impute_missing
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller, kpss
 
-plt.rc('figure', figsize=(18,10))
+plt.rc('figure', figsize=(16,6))
 sns.set_style('darkgrid')
 
 ## Define default seed
@@ -124,6 +124,8 @@ fred_df = fred_df.drop(columns=['NWPIx','USEHS'])
 
 ## Need to handle COVID period. Typically 2020Q2 and 2020Q3 are set to NaN and later imputed with the Kalman smoother.
 fred_df.loc['2020-06-01':'2020-09-01',:] = None
+fred_df_full = fred_df.copy(deep=True)
+fred_df = fred_df.iloc[:80]
 
 """
 2. Factor Analysis via Static Methods
@@ -135,6 +137,7 @@ fred_df.loc['2020-06-01':'2020-09-01',:] = None
     2.5 AIC + Likelihood Ratio test for determining the order of the VAR process followed by the common factors.
 
 """
+
 T, n = fred_df.shape
 ## Bai and Ng (2002) upper bound for kmax
 kf = int((min(n,T)/100)**0.25)
@@ -145,7 +148,7 @@ rhat1, rhat2, plot = ABC_crit(fred_df, kmax, seed=seed, ax=ax, standardize=True)
 plt.show()
 
 ## rhat1 and rhat2 are the estimated number of common factors at 5 and 1 percent thresholds.
-kfactors = rhat2
+kfactors = rhat1
 
 ## To proceed, we first standardize the data
 fred_df_means = fred_df.mean()
@@ -317,8 +320,8 @@ W = 80
 
 
 
-dfm_ssm_res = dfm_ssm_model.fit(start_params=init_params, transformed=True,
-                                cov_type='none', method='em')
+#dfm_ssm_res = dfm_ssm_model.fit(start_params=init_params, transformed=True,
+#                                cov_type='none', method='em')
 
 
 
