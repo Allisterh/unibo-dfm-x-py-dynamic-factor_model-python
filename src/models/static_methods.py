@@ -138,11 +138,11 @@ class SFM_StateSpace:
     def _impute_missing(self):
         ## Impute missing values according to the chosen method
         if self._missing == 'mean':
-            self._adjuted_data = self._fill_missing_mean()
+            self._adjusted_data = self._fill_missing_mean()
         elif self._missing == 'fill-em':
-            self._adjuted_data = self._fill_missing_em()
+            self._adjusted_data = self._fill_missing_em()
         elif self._missing == None:
-            if not np.isfinite(self._adjuted_data).all():
+            if not np.isfinite(self._adjusted_data).all():
                 raise ValueError('''Data contains missing values.\
                                  These values should either be dropped or imputed via one of the methods "mean" or "fill-em".''')
         else:
